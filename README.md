@@ -1,7 +1,7 @@
 # 이젠 돌아갈 때 (Time To Go Home)
 
 군 생활 목표 달성 SNS TODOLIST  
-[https://timetogohome.kro.kr](https://timetogohome.kro.kr)
+<!-- [https://timetogohome.kro.kr](https://timetogohome.kro.kr) 도메인 만료로 주석 처리 -->
 
 ## 프로젝트 소개
 
@@ -91,8 +91,6 @@ $ cd WEB_FE
 $ npm install
 $ npm run start
 ```
-
-## 프로젝트 사용법 (Getting Started)
 
 ## 팀 정보 (Team Information)
 
