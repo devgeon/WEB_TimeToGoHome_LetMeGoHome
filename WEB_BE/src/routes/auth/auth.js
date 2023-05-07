@@ -57,10 +57,16 @@ router.post("/register", downImage.single("profileImage"), async (req, res) => {
     //password 암호화
     const salt = 10;
     const enpassword = await bcrypt.hashSync(req.body.password, salt);
+    if (!name | !email | !armyType | !armyRank | !enlistment | !discharge) {
+      return res.status(400).json({
+        code: 400,
+        message: "필수 입력값이 누락되었습니다.",
+      });
+    }
     if (!req.file) {
-      return res.status(500).json({
-        code: 500,
-        message: "프로필 이미지를 업로드할 수 없습니다.",
+      return res.status(400).json({
+        code: 400,
+        message: "프로필 이미지가 누락되었습니다.",
       });
     }
     profileImageFile = req.file;
@@ -112,11 +118,13 @@ router.post("/register", downImage.single("profileImage"), async (req, res) => {
       return res.status(500).json({ code: 500, message: "Error" });
     }
   } finally {
-    fs.unlink(profileImageFile.path, (error) => {
-      if (error) {
-        console.error(error);
-      }
-    });
+    if (req.file) {
+      fs.unlink(profileImageFile.path, (error) => {
+        if (error) {
+          console.error(error);
+        }
+      });
+    }
   }
 });
 
