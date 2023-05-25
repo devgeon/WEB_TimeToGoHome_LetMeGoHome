@@ -1,18 +1,25 @@
-/* eslint-disable consistent-return */
 import React, { useState, useEffect } from "react";
-import PropTypes, { func } from "prop-types";
+import PropTypes from "prop-types";
 import Calendar from "react-calendar";
 import "../calendar.css";
 import dayjs from "dayjs";
 import axios from "../utils/axios.util";
 
-import AddTaskListImg from "../images/Add_1.png";
-import AddTask from "../images/Add_2.png";
-import TrashImg from "../images/Trash_1.png";
-import AddTodo from "../images/AddList.png";
-import EditBtnImg from "../images/Edit_fill.png";
-import CheckBtnImg from "../images/Verified.png";
+import { Modal, FormModal } from "../component/Modal";
+import {
+  TextInput,
+  DateInput,
+  TimeInput,
+  FileInput,
+} from "../component/ModalInput";
+
+import AddTodoBtnImg from "../images/AddList.png";
 import EditTodoBtnImg from "../images/edit.png";
+import AddTaskBtnImg from "../images/Add_1.png";
+import EditTaskBtnImg from "../images/Edit_fill.png";
+import ModalAddBtnImg from "../images/Add_2.png";
+import TrashBtnImg from "../images/Trash_1.png";
+import CheckBtnImg from "../images/Verified.png";
 import ShareBtnImg from "../images/share.png";
 
 function LandingPage(props) {
@@ -21,7 +28,6 @@ function LandingPage(props) {
   const [currentList, setCurrentList] = useState([]);
   const [inputTask, setInputTask] = useState("");
   const [editTask, setEditTask] = useState("");
-  const [inputTitle, setInputTitle] = useState("");
   const [time, setTime] = useState("");
   const [date, setDate] = useState(new Date()); // 날짜 for calendar
   const [task, setTask] = useState({
@@ -93,11 +99,11 @@ function LandingPage(props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inputTask, date, time]);
 
-  function handleUpdateTask(updateTodo) {
+  const handleUpdateTask = (updateTodo) => {
     axios.post("/api/todo/task/update", updateTodo).then((response) => {});
-  }
+  };
 
-  function handleAddTask(e) {
+  const handleAddTask = (e) => {
     e.preventDefault();
 
     if (!task.content || !inputTask) {
@@ -128,16 +134,16 @@ function LandingPage(props) {
     setTime("");
     document.getElementById("inputTaskModal").style.display = "none";
     document.getElementById("input_time").value = "";
-  }
+  };
 
-  function handleDelTodo(id) {
+  const handleDelTodo = (id) => {
     axios.post("/api/todo/delete", { id }).then((response) => {});
     const newTodoList = todoLists.filter((todoItem) => todoItem.id !== id);
     setTodolists(newTodoList);
     document.getElementById("delTodoModal").style.display = "none";
-  }
+  };
 
-  function handleAddTodo(e) {
+  const handleAddTodo = (e) => {
     e.preventDefault();
     if (!todo.goal) {
       // eslint-disable-next-line no-alert
@@ -159,10 +165,10 @@ function LandingPage(props) {
     });
     document.getElementById("input_goal").value = "";
     setTodo({ goal: "", start: "", end: "" });
-    document.getElementById("addTodoListModal").style.display = "none";
     document.getElementById("input_start_time").value = "";
     document.getElementById("input_end_time").value = "";
-  }
+    document.getElementById("addTodoModal").style.display = "none";
+  };
 
   useEffect(() => {
     if (editTask && time) {
@@ -175,9 +181,10 @@ function LandingPage(props) {
         )}:00.000Z`,
       });
     } else if (editTask) {
-      const nextTask = task;
-      nextTask.content = editTask;
-      setTask(nextTask);
+      setTask({
+        ...task,
+        content: editTask,
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editTask, date, time]);
@@ -223,9 +230,11 @@ function LandingPage(props) {
     axios
       .post("/api/todo/share", formData)
       .then((res) => {
+        // eslint-disable-next-line no-alert
         alert("공유가 완료되었습니다.");
       })
       .catch((err) => {
+        // eslint-disable-next-line no-alert
         alert("공유에 실패했습니다.");
       })
       .finally(() => {
@@ -280,11 +289,41 @@ function LandingPage(props) {
           </div>
           <div className="mt-5">
             <div
-              id="addTodoListButton"
+              id="todoCtrlButton"
               className="flex flex-row justify-between basis-1/6"
             >
               <button
-                id="add-todolist-btn"
+                id="addTodoBtn"
+                type="button"
+                className="flex flex-row items-center justify-center w-[80%] h-[50px] bg-white rounded-md mt-2"
+                onClick={() => {
+                  document.getElementById("addTodoModal").style.display =
+                    "block";
+                }}
+              >
+                <img
+                  src={AddTodoBtnImg}
+                  alt="add todolist"
+                  className="w-8 h-8 mr-2 mb-8"
+                />
+              </button>
+              <button
+                id="editTodoBtn"
+                type="button"
+                className="flex flex-row items-center justify-center w-[80%] h-[50px] bg-white rounded-md mt-2"
+                onClick={() => {
+                  document.getElementById("editTodoModal").style.display =
+                    "block";
+                }}
+              >
+                <img
+                  src={EditTodoBtnImg}
+                  alt="edit todolist"
+                  className="w-8 h-8 mr-2 mb-8"
+                />
+              </button>
+              <button
+                id="delTodoBtn"
                 type="button"
                 className="flex flex-row items-center justify-center w-[80%] h-[50px] bg-white rounded-md mt-2"
                 onClick={() => {
@@ -293,28 +332,13 @@ function LandingPage(props) {
                 }}
               >
                 <img
-                  src={TrashImg}
-                  alt="add todolist"
+                  src={TrashBtnImg}
+                  alt="del todolist"
                   className="w-8 h-8 mr-2 mb-8"
                 />
               </button>
               <button
-                id="add-todolist-btn"
-                type="button"
-                className="flex flex-row items-center justify-center w-[80%] h-[50px] bg-white rounded-md mt-2"
-                onClick={() => {
-                  document.getElementById("addTodoListModal").style.display =
-                    "block";
-                }}
-              >
-                <img
-                  src={EditTodoBtnImg}
-                  alt="add todolist"
-                  className="w-8 h-8 mr-2 mb-8"
-                />
-              </button>
-              <button
-                id="share-todolist-btn"
+                id="shareTodoBtn"
                 type="button"
                 onClick={(e) => {
                   document.getElementById("shareTodoModal").style.display =
@@ -335,142 +359,6 @@ function LandingPage(props) {
             >
               다른 TODOLIST
             </a>
-          </div>
-          <div
-            id="addTodoListModal"
-            className="modal bg-gray-700/30 hidden h-full overflow-auto fixed top-0 left-0 w-full z-10"
-          >
-            <div
-              className="modal-content bg-white border-solid mx-auto p-5 mt-[10%] 
-              mb-[15%] border-0 w-5/12 h-5/12 flex flex-col rounded-2xl shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)]"
-            >
-              <div className="flex flex-row items-center">
-                <h2 className="grow font-StrongAFBold text-3xl ml-5">
-                  TODOLIST 추가
-                </h2>
-                <button
-                  className="order-last"
-                  type="button"
-                  onClick={(e) => {
-                    document.getElementById("input_goal").value = "";
-                    document.getElementById("input_start_time").value = "";
-                    document.getElementById("input_end_time").value = "";
-                    document.getElementById("addTodoListModal").style.display =
-                      "none";
-                  }}
-                >
-                  <span className="close">&times;</span>
-                </button>
-              </div>
-              <div className="flex flex-col mt-12">
-                <span className="text-xl mx-auto font-semibold font-StrongAF">
-                  TODOLIST를 추가하세요@!
-                </span>
-                <div className="flex justify-center">
-                  <input
-                    id="input_goal"
-                    className="w-4/6 h-12 border-2 border-gray-300 rounded-lg mt-5 p-5 font-StrongAF"
-                    type="text"
-                    placeholder="ex) 3대 500 달성하기"
-                    onChange={(e) => {
-                      setTodo({ ...todo, goal: e.target.value });
-                    }}
-                  />
-                </div>
-                <div className="flex justify-center">
-                  <input
-                    id="input_start_time"
-                    className="w-4/6 h-12 border-2 border-gray-300 rounded-lg mt-5 p-5 font-StrongAF"
-                    type="text"
-                    placeholder="시작 날짜를 정해주세요!"
-                    onFocus={(e) => {
-                      e.target.type = "date";
-                      const today = new Date();
-                      const yyyy = today.getFullYear();
-                      let mm = today.getMonth() + 1;
-                      let dd = today.getDate();
-
-                      if (dd < 10) dd = `0${dd}`;
-                      if (mm < 10) mm = `0${mm}`;
-                      e.target.max = `${yyyy}-${mm}-${dd}`;
-                      e.target.min = "2010-01-01";
-                    }}
-                    onBlur={(e) => {
-                      e.target.type = "text";
-                    }}
-                    onChange={(e) => {
-                      setTodo({ ...todo, start: e.target.value });
-                    }}
-                  />
-                </div>
-                <div className="flex justify-center">
-                  <input
-                    id="input_end_time"
-                    className="w-4/6 h-12 border-2 border-gray-300 rounded-lg mt-5 p-5 font-StrongAF"
-                    type="text"
-                    placeholder="끝나는 날짜를 정해주세요!"
-                    onFocus={(e) => {
-                      e.target.type = "date";
-                      e.target.max = "9999-12-31";
-                      e.target.min = "2010-01-01";
-                    }}
-                    onBlur={(e) => {
-                      e.target.type = "text";
-                    }}
-                    onChange={(e) => {
-                      setTodo({ ...todo, end: e.target.value });
-                    }}
-                  />
-                </div>
-                <button
-                  id="addTodoBtn"
-                  type="button"
-                  className="mx-auto w-[60px] h-[60px] mt-16"
-                  onClick={handleAddTodo}
-                >
-                  <img src={AddTask} alt="Addtask" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div
-            id="delTodoModal"
-            className="modal bg-gray-700/30 hidden h-full overflow-auto fixed top-0 left-0 w-full z-10"
-          >
-            <div
-              className="modal-content bg-white border-solid mx-auto p-5 mt-[10%] 
-              mb-[15%] border-0 w-5/12 h-5/12 flex flex-col rounded-2xl shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)]"
-            >
-              <div className="flex flex-row items-center">
-                <h2 className="grow font-StrongAFBold text-3xl ml-5">
-                  TODOLIST 삭제
-                </h2>
-                <button
-                  className="order-last"
-                  type="button"
-                  onClick={(e) => {
-                    document.getElementById("delTodoModal").style.display =
-                      "none";
-                  }}
-                >
-                  <span className="close">&times;</span>
-                </button>
-              </div>
-              <div className="flex flex-col mt-12">
-                <span className="text-xl mx-auto font-semibold font-StrongAF">
-                  정말로 TODOLIST를 삭제하시겠습니까?
-                </span>
-                <button
-                  id="delTodoBtn"
-                  type="button"
-                  className="mx-auto w-[60px] h-[60px] mt-16"
-                  onClick={() => handleDelTodo(currentList.id)}
-                >
-                  <img src={AddTask} alt="Addtask" />
-                </button>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -518,7 +406,7 @@ function LandingPage(props) {
                       onClick={() => deleteTask(option.id)}
                     >
                       <img
-                        src={TrashImg}
+                        src={TrashBtnImg}
                         alt="trash task"
                         className="w-6 h-6 mt-auto"
                       />
@@ -544,7 +432,7 @@ function LandingPage(props) {
                       }}
                     >
                       <img
-                        src={EditBtnImg}
+                        src={EditTaskBtnImg}
                         alt="edit task"
                         className="w-6 h-6 mt-auto"
                       />
@@ -562,262 +450,151 @@ function LandingPage(props) {
                     "block";
                 }}
               >
-                <img src={AddTaskListImg} alt="AddTask" />
+                <img src={AddTaskBtnImg} alt="AddTask" />
               </button>
             </div>
 
-            {/* Todo 공유 모달창 */}
-            <div
-              id="shareTodoModal"
-              className="modal bg-gray-700/30 hidden h-full overflow-auto fixed top-0 left-0 w-full z-10"
+            {/* Todo 추가 모달창 */}
+            <Modal
+              modalId="addTodoModal"
+              title="TODOLIST 추가"
+              message="TODOLIST를 추가하세요!"
+              btnId="addTodoBtn"
+              btnClick={handleAddTodo}
+              btnImg={ModalAddBtnImg}
             >
-              <div
-                className="modal-content bg-white border-solid mx-auto p-5 mt-[10%] 
-              mb-[15%] border-0 w-5/12 h-5/12 flex flex-col rounded-2xl shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)]"
-              >
-                <div className="flex flex-row items-center">
-                  <h2 className="grow font-StrongAFBold text-3xl ml-5">
-                    TODOLIST 공유
-                  </h2>
+              <TextInput
+                id="input_goal"
+                placeholder="ex) 3대 500 달성하기"
+                onChange={(e) => {
+                  setTodo({ ...todo, goal: e.target.value });
+                }}
+              />
+              <DateInput
+                id="input_start_time"
+                placeholder="시작 날짜를 정해주세요!"
+                onChange={(e) => {
+                  setTodo({ ...todo, start: e.target.value });
+                }}
+              />
+              <DateInput
+                id="input_end_time"
+                placeholder="끝나는 날짜를 정해주세요!"
+                onChange={(e) => {
+                  setTodo({ ...todo, end: e.target.value });
+                }}
+              />
+            </Modal>
 
-                  <button
-                    className="order-last"
-                    type="button"
-                    onClick={(e) => {
-                      document.getElementById("shareTodoModal").style.display =
-                        "none";
-                    }}
-                  >
-                    <span className="close">&times;</span>
-                  </button>
-                </div>
-                <div className="flex flex-col mt-12">
-                  <span className="text-xl mx-auto font-semibold font-StrongAF">
-                    당신의 TODOLIST를 공유하세요!
-                  </span>
-                  <form
-                    encType="multipart/form-data"
-                    onSubmit={handleShareTodo}
-                  >
-                    <div className="flex justify-center">
-                      <input
-                        id="input_title"
-                        className="w-4/6 h-12 border-2 border-gray-300 rounded-lg mt-5 p-5 font-StrongAF"
-                        type="text"
-                        placeholder="제목을 적어주세요"
-                        onChange={(e) => {
-                          const nextShare = { ...share };
-                          nextShare.title = e.target.value;
-                          setShare(nextShare);
-                        }}
-                      />
-                    </div>
-                    <div className="flex justify-center">
-                      <input
-                        id="input_desc"
-                        className="w-4/6 h-12 border-2 border-gray-300 rounded-lg mt-5 p-5 font-StrongAF"
-                        type="text"
-                        placeholder="설명을 적어주세요"
-                        onChange={(e) => {
-                          const nextShare = { ...share };
-                          nextShare.desc = e.target.value;
-                          setShare(nextShare);
-                        }}
-                      />
-                    </div>
-                    <div className="flex justify-center">
-                      <div className="w-4/6 h-12 border-2 border-gray-300 rounded-lg mt-5 p-5 font-StrongAF">
-                        <label
-                          htmlFor="share-image-input"
-                          className="text-gray-400"
-                          style={{ position: "relative", top: "-0.6rem" }}
-                        >
-                          {share.shareImage ? "" : "대표사진을 올려주세요"}
-                          <span className="italic text-black">
-                            {share.shareImage ? share.shareImage.name : ""}
-                          </span>
-                          <input
-                            id="share-image-input"
-                            name="profile-image"
-                            type="file"
-                            style={{ display: "none" }}
-                            accept="image/*"
-                            onChange={(e) => {
-                              const nextShare = { ...share };
-                              // eslint-disable-next-line prefer-destructuring
-                              nextShare.shareImage = e.target.files[0];
-                              setShare(nextShare);
-                            }}
-                          />
-                        </label>
-                      </div>
-                    </div>
-                    <div className="flex justify-center">
-                      <input
-                        id="input_hashtag"
-                        className="w-4/6 h-12 border-2 border-gray-300 rounded-lg mt-5 p-5 font-StrongAF"
-                        type="text"
-                        placeholder="태그를 적어주세요"
-                        onChange={(e) => {
-                          const nextShare = { ...share };
-                          nextShare.hashtag = e.target.value;
-                          setShare(nextShare);
-                        }}
-                      />
-                    </div>
-                    <button
-                      id="shareTodoBtn"
-                      type="submit"
-                      className="mx-auto w-[60px] h-[60px] mt-16"
-                    >
-                      <img src={AddTask} alt="share todolist button" />
-                    </button>
-                  </form>
-                </div>
-              </div>
-            </div>
+            {/* Todo 삭제 모달창 */}
+            <Modal
+              modalId="delTodoModal"
+              title="TODOLIST 삭제"
+              message="정말로 TODOLIST를 삭제하시겠습니까?"
+              btnId="delTodoBtn"
+              btnClick={() => handleDelTodo(currentList.id)}
+              btnImg={ModalAddBtnImg}
+            />
+
+            {/* Todo 공유 모달창 */}
+            <Modal
+              modalId="shareTodoModal"
+              title="TODOLIST 공유"
+              message="당신의 TODOLIST를 공유하세요!"
+              btnId="shareTodoBtn"
+              btnClick={handleShareTodo}
+              btnImg={ModalAddBtnImg}
+            >
+              <TextInput
+                id="input_title"
+                placeholder="제목을 적어주세요"
+                onChange={(e) => {
+                  const nextShare = { ...share };
+                  nextShare.title = e.target.value;
+                  setShare(nextShare);
+                }}
+              />
+              <TextInput
+                id="input_desc"
+                placeholder="설명을 적어주세요"
+                onChange={(e) => {
+                  const nextShare = { ...share };
+                  nextShare.desc = e.target.value;
+                  setShare(nextShare);
+                }}
+              />
+              <FileInput
+                id="share-image-input"
+                name="profile-image"
+                placeholder="대표사진을 올려주세요"
+                onChange={(e) => {
+                  const nextShare = { ...share };
+                  [nextShare.shareImage] = e.target.files;
+                  setShare(nextShare);
+                }}
+                file={share.shareImage}
+                fileType="image/*"
+              />
+              <TextInput
+                id="input_hashtag"
+                placeholder="태그를 적어주세요"
+                onChange={(e) => {
+                  const nextShare = { ...share };
+                  nextShare.hashtag = e.target.value;
+                  setShare(nextShare);
+                }}
+              />
+            </Modal>
 
             {/* Task 작성 모달창 */}
-            <div
-              id="inputTaskModal"
-              className="modal bg-gray-700/30 hidden h-full overflow-auto fixed top-0 left-0 w-full z-10"
+            <Modal
+              modalId="inputTaskModal"
+              title="Task 추가"
+              message="당신의 할 일을 추가하세요!"
+              btnId="addTaskBtn"
+              btnClick={handleAddTask}
+              btnImg={ModalAddBtnImg}
             >
-              <div
-                className="modal-content bg-white border-solid mx-auto p-5 mt-[10%] 
-              mb-[15%] border-0 w-5/12 h-5/12 flex flex-col rounded-2xl shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)]"
-              >
-                <div className="flex flex-row items-center">
-                  <h2 className="grow font-StrongAFBold text-3xl ml-5">
-                    Task 추가
-                  </h2>
-                  <button
-                    className="order-last"
-                    type="button"
-                    onClick={(e) => {
-                      document.getElementById("input_time").value = "";
-                      document.getElementById("input_task").value = "";
-                      document.getElementById("inputTaskModal").style.display =
-                        "none";
-                    }}
-                  >
-                    <span className="close">&times;</span>
-                  </button>
-                </div>
-                <div className="flex flex-col mt-12">
-                  <span className="text-xl mx-auto font-semibold font-StrongAF">
-                    당신의 할 일을 추가하세요!
-                  </span>
-                  <div className="flex justify-center">
-                    <input
-                      id="input_task"
-                      className="w-4/6 h-12 border-2 border-gray-300 rounded-lg mt-5 p-5 font-StrongAF"
-                      type="text"
-                      placeholder="ex) 운동하기"
-                      onChange={(e) => {
-                        setInputTask(e.target.value);
-                      }}
-                    />
-                  </div>
-                  <div className="flex justify-center">
-                    <input
-                      id="input_time"
-                      className="w-4/6 h-12 border-2 border-gray-300 rounded-lg mt-5 p-5 font-StrongAF"
-                      type="text"
-                      placeholder="시간을 정해주세요!"
-                      onChange={(e) => {
-                        setTime(e.target.value);
-                      }}
-                      onFocus={(e) => {
-                        e.target.type = "time";
-                      }}
-                      onBlur={(e) => {
-                        e.target.type = "text";
-                      }}
-                    />
-                  </div>
-                  <button
-                    id="addTaskBtn"
-                    type="button"
-                    className="mx-auto w-[60px] h-[60px] mt-16"
-                    onClick={handleAddTask}
-                  >
-                    <img src={AddTask} alt="Addtask" />
-                  </button>
-                </div>
-              </div>
-            </div>
+              <TextInput
+                id="input_task"
+                placeholder="ex) 운동하기"
+                onChange={(e) => {
+                  setInputTask(e.target.value);
+                }}
+              />
+              <TimeInput
+                id="input_time"
+                placeholder="시간을 정해주세요"
+                onChange={(e) => {
+                  setTime(e.target.value);
+                }}
+              />
+            </Modal>
 
             {/* Task 수정 모달창 */}
-            <div
-              id="editTaskModal"
-              className="modal bg-gray-700/30 hidden h-full overflow-auto fixed top-0 left-0 w-full z-10"
+            <Modal
+              modalId="editTaskModal"
+              title="Task 수정"
+              message="당신의 할 일을 수정하세요!"
+              btnId="editTaskBtn"
+              btnClick={handleEditTask}
+              btnImg={CheckBtnImg}
             >
-              <div
-                className="modal-content bg-white border-solid mx-auto p-5 mt-[10%] 
-              mb-[15%] border-0 w-5/12 h-5/12 flex flex-col rounded-2xl shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)]"
-              >
-                <div className="flex flex-row items-center">
-                  <h2 className="grow font-StrongAFBold text-3xl ml-5">
-                    Task 수정
-                  </h2>
-                  <button
-                    className="order-last"
-                    type="button"
-                    onClick={(e) => {
-                      document.getElementById("editTaskModal").style.display =
-                        "none";
-                    }}
-                  >
-                    <span className="close">&times;</span>
-                  </button>
-                </div>
-                <div className="flex flex-col mt-12">
-                  <span className="text-xl mx-auto font-semibold font-StrongAF">
-                    당신의 할 일을 수정하세요!
-                  </span>
-                  <div className="flex justify-center">
-                    <input
-                      id="input_task_edit"
-                      className="w-4/6 h-12 border-2 border-gray-300 rounded-lg mt-5 p-5 font-StrongAF"
-                      type="text"
-                      placeholder="ex) 운동하기"
-                      onChange={(e) => {
-                        setEditTask(e.target.value);
-                      }}
-                    />
-                  </div>
-                  <div className="flex justify-center">
-                    <input
-                      id="edit_time"
-                      className="w-4/6 h-12 border-2 border-gray-300 rounded-lg mt-5 p-5 font-StrongAF"
-                      type="text"
-                      placeholder="시간을 정해주세요!"
-                      onChange={(e) => {
-                        setTime(e.target.value);
-                      }}
-                      onFocus={(e) => {
-                        e.target.type = "time";
-                      }}
-                      onBlur={(e) => {
-                        e.target.type = "text";
-                      }}
-                    />
-                  </div>
-                  <button
-                    id="editTaskBtn"
-                    type="button"
-                    className="mx-auto mt-16"
-                    onClick={handleEditTask}
-                  >
-                    <img
-                      src={CheckBtnImg}
-                      className="w-[35px] h-[35px]"
-                      alt="Addtask"
-                    />
-                  </button>
-                </div>
-              </div>
-            </div>
+              <TextInput
+                id="input_task_edit"
+                placeholder="ex) 운동하기"
+                onChange={(e) => {
+                  setEditTask(e.target.value);
+                }}
+              />
+              <TimeInput
+                id="edit_time"
+                placeholder="시간을 정해주세요!"
+                onChange={(e) => {
+                  setTime(e.target.value);
+                }}
+              />
+            </Modal>
           </div>
 
           <div
