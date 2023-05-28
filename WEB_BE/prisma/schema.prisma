@@ -47,7 +47,7 @@ model Share {
   like        Int      @default(0) @db.UnsignedInt
   hashtag     String   @db.VarChar(50)
   postTime    DateTime @default(now())
-  Todo        Todo     @relation(fields: [todoId], references: [id])
+  Todo        Todo     @relation(fields: [todoId], references: [id], onDelete: Cascade)
 }
 
 model Task {
