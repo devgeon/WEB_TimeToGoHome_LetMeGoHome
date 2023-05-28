@@ -91,20 +91,28 @@ Modal.propTypes = {
   modalId: PropTypes.string.isRequired,
   title: PropTypes.string.isRequired,
   message: PropTypes.string.isRequired,
-  children: PropTypes.node.isRequired,
+  children: PropTypes.node,
   btnId: PropTypes.string.isRequired,
   btnClick: PropTypes.func.isRequired,
   btnImg: PropTypes.node.isRequired,
+};
+
+Modal.defaultProps = {
+  children: "",
 };
 
 FormModal.propTypes = {
   modalId: PropTypes.string.isRequired,
   title: PropTypes.string.isRequired,
   message: PropTypes.string.isRequired,
-  children: PropTypes.node.isRequired,
+  children: PropTypes.node,
   btnId: PropTypes.string.isRequired,
   btnClick: PropTypes.func.isRequired,
   btnImg: PropTypes.node.isRequired,
+};
+
+FormModal.defaultProps = {
+  children: "",
 };
 
 export { Modal, FormModal };

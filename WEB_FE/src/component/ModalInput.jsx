@@ -118,12 +118,13 @@ FileInput.propTypes = {
   name: PropTypes.string.isRequired,
   placeholder: PropTypes.string,
   onChange: PropTypes.func.isRequired,
-  file: PropTypes.instanceOf(File).isRequired,
+  file: PropTypes.instanceOf(File),
   fileType: PropTypes.string.isRequired,
 };
 
 FileInput.defaultProps = {
   placeholder: "파일을 첨부해주세요!",
+  file: undefined,
 };
 
 export { TextInput, DateInput, TimeInput, FileInput };

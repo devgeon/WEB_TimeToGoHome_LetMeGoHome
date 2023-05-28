@@ -23,92 +23,127 @@ import CheckBtnImg from "../images/Verified.png";
 import ShareBtnImg from "../images/share.png";
 
 function LandingPage(props) {
-  const { user, setUser, Logout } = props;
-  const [todoLists, setTodolists] = useState([]);
-  const [currentList, setCurrentList] = useState([]);
-  const [inputTask, setInputTask] = useState("");
-  const [editTask, setEditTask] = useState("");
-  const [time, setTime] = useState("");
-  const [date, setDate] = useState(new Date()); // 날짜 for calendar
-  const [task, setTask] = useState({
-    id: undefined,
-    content: "",
-    datetime: "",
-    isDone: false, // 체크박스
-  }); // calendar에서 선택한 날짜의 task들을 저장하는 state
-  const [share, setShare] = useState({});
+  const { user, Logout } = props;
+  const [todoList, setTodolist] = useState([]);
+  const [taskList, setTaskList] = useState([]);
   const [todo, setTodo] = useState({
+    id: null,
     goal: "",
     start: "",
     end: "",
   });
-  const [taskList, setTaskList] = useState([]);
+  const [task, setTask] = useState({
+    id: null,
+    todoId: null,
+    content: "",
+    datetime: "",
+    isDone: false,
+  });
+  const [shareTodo, setShareTodo] = useState({
+    id: null,
+    title: "",
+    desc: "",
+    shareImage: null,
+    hashtag: "",
+  });
+  const [selTodoIdx, setSelTodoIdx] = useState(null);
+  const [selDate, setSelDate] = useState(new Date());
 
-  // <-------------------axios get request-------------------->
   useEffect(() => {
+    axios.get("/api/todo/me").then((response) => {
+      setTodolist(response.data.payload);
+      if (response.data.payload) {
+        setSelTodoIdx(0);
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    if (selTodoIdx === null) {
+      return;
+    }
     axios
       .get("/api/todo/task", {
         params: {
-          todoId: currentList.id,
-          date: dayjs(date).format("YYYY-MM-DD"),
+          todoId: todoList[selTodoIdx].id,
+          date: dayjs(selDate).format("YYYY-MM-DD"),
         },
       })
       .then((response) => {
         setTaskList(response.data.payload);
-      })
-      .catch((err) => {});
-  }, [currentList, date]);
-
-  // getting todolists
-  useEffect(() => {
-    axios.get("/api/user/me").then((response) => {
-      setUser({ ...response.data.payload });
-    });
-    // getting tasks
-    axios.get("/api/todo/me").then((response) => {
-      setTodolists(response.data.payload);
-      setCurrentList(response.data.payload[0]);
-    });
-  }, []);
-  // <-------------------axios get request-------------------->
-
-  const taskSubmitHandler = () => {
-    setTaskList([
-      ...taskList,
-      {
-        todoId: task.todoId,
-        content: task.content,
-        datetime: task.datetime,
-      },
-    ]);
-  };
-
-  // eslint-disable-next-line no-shadow
-  const todoSubmitHandler = (todo) => {
-    setTodolists([...todoLists, todo]);
-  };
-
-  useEffect(() => {
-    if (inputTask) {
-      setTask({
-        ...task,
-        content: inputTask,
-        datetime: `${dayjs(date).format("YYYY-MM-DD")} ${time}`,
       });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inputTask, date, time]);
+  }, [todoList, selTodoIdx, selDate]);
 
-  const handleUpdateTask = (updateTodo) => {
-    axios.post("/api/todo/task/update", updateTodo).then((response) => {});
+  const handleAddTodo = (e) => {
+    e.preventDefault();
+    if (!todo.goal) {
+      alert("목표를 입력해주세요!");
+      return;
+    }
+    if (!todo.start) {
+      alert("시작일을 입력해주세요!");
+      return;
+    }
+    if (!todo.end) {
+      alert("종료일을 입력해주세요!");
+      return;
+    }
+    axios
+      .post("/api/todo/create", todo)
+      .then((response) => {
+        setTodolist([...todoList, response.data.payload]);
+      })
+      .finally(() => {
+        setTodo({ id: null, goal: "", start: "", end: "" });
+        document.getElementById("input_goal").value = "";
+        document.getElementById("input_start_time").value = "";
+        document.getElementById("input_end_time").value = "";
+        document.getElementById("addTodoModal").style.display = "none";
+      });
+  };
+
+  const handleDelTodo = (e, id) => {
+    e.preventDefault();
+    axios
+      .post("/api/todo/delete", { id })
+      .then((response) => {
+        const newTodoList = todoList.filter((todoItem) => todoItem.id !== id);
+        setTodolist(newTodoList);
+        setSelTodoIdx(newTodoList.length > 0 ? 0 : null);
+      })
+      .finally(() => {
+        document.getElementById("delTodoModal").style.display = "none";
+      });
+  };
+
+  const handleShareTodo = (e) => {
+    e.preventDefault();
+    const formData = new FormData();
+    formData.append("todoId", String(todoList[selTodoIdx].id));
+    Object.keys(shareTodo).forEach((key) =>
+      formData.append(key, shareTodo[key])
+    );
+    axios
+      .post("/api/todo/share", formData)
+      .then((response) => {
+        alert("공유가 완료되었습니다.");
+      })
+      .catch((error) => {
+        alert("공유에 실패했습니다.");
+      })
+      .finally(() => {
+        document.getElementById("shareTodoModal").style.display = "none";
+      });
   };
 
   const handleAddTask = (e) => {
     e.preventDefault();
-
-    if (!task.content || !inputTask) {
-      // eslint-disable-next-line no-alert
+    if (!task.content) {
       alert("할 일을 입력해주세요!");
+      return;
+    }
+    if (!task.datetime) {
+      alert("시간을 입력해주세요!");
       return;
     }
     const isTaskInList = taskList.some(
@@ -117,129 +152,75 @@ function LandingPage(props) {
         task.content.toLowerCase().replace(/\s/g, "")
     );
     if (isTaskInList) {
-      // eslint-disable-next-line no-alert
       alert("이미 추가된 할 일입니다!");
       return;
     }
-    taskSubmitHandler();
-
-    const nextTask = { ...task };
-    nextTask.todoId = currentList.id;
-    setTask(nextTask);
-
-    axios.post("/api/todo/task/create", nextTask).then((response) => {});
-
-    document.getElementById("input_task").value = "";
-    setTask({ id: "", content: "", datetime: "" });
-    setTime("");
-    document.getElementById("inputTaskModal").style.display = "none";
-    document.getElementById("input_time").value = "";
-  };
-
-  const handleDelTodo = (id) => {
-    axios.post("/api/todo/delete", { id }).then((response) => {});
-    const newTodoList = todoLists.filter((todoItem) => todoItem.id !== id);
-    setTodolists(newTodoList);
-    document.getElementById("delTodoModal").style.display = "none";
-  };
-
-  const handleAddTodo = (e) => {
-    e.preventDefault();
-    if (!todo.goal) {
-      // eslint-disable-next-line no-alert
-      alert("목표를 입력해주세요!");
-      return;
-    }
-    if (!todo.start) {
-      // eslint-disable-next-line no-alert
-      alert("시작일을 입력해주세요!");
-      return;
-    }
-    if (!todo.end) {
-      // eslint-disable-next-line no-alert
-      alert("종료일을 입력해주세요!");
-      return;
-    }
-    axios.post("/api/todo/create", todo).then((response) => {
-      todoSubmitHandler(response.data.payload);
-    });
-    document.getElementById("input_goal").value = "";
-    setTodo({ goal: "", start: "", end: "" });
-    document.getElementById("input_start_time").value = "";
-    document.getElementById("input_end_time").value = "";
-    document.getElementById("addTodoModal").style.display = "none";
-  };
-
-  useEffect(() => {
-    if (editTask && time) {
-      setTask({
-        ...task,
-        content: editTask,
-        datetime: `${dayjs(date).format("YYYY-MM-DD")}T${time.replace(
-          "-",
-          ":"
-        )}:00.000Z`,
+    const nextTask = { ...task, todoId: todoList[selTodoIdx].id };
+    axios
+      .post("/api/todo/task/create", nextTask)
+      .then((response) => {
+        setTaskList([...taskList, response.data.payload]);
+      })
+      .finally(() => {
+        setTask({
+          id: null,
+          todoId: null,
+          content: "",
+          datetime: "",
+        });
+        document.getElementById("input_task").value = "";
+        document.getElementById("input_time").value = "";
+        document.getElementById("inputTaskModal").style.display = "none";
       });
-    } else if (editTask) {
-      setTask({
-        ...task,
-        content: editTask,
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editTask, date, time]);
+  };
 
   const handleEditTask = (e) => {
     e.preventDefault();
-    if (!editTask) {
-      // eslint-disable-next-line no-alert
-      alert("수정 할 일을 입력해주세요!");
+    if (!task.content) {
+      alert("수정할 내용을 입력해주세요!");
       return;
     }
-    const newTaskList = [...taskList];
-    for (let i = 0; i < Object.keys(newTaskList).length; i += 1) {
-      if (newTaskList[i].id === task.id) {
-        newTaskList[i].content = task.content;
-        if (time) {
-          newTaskList[i].datetime = task.datetime;
-        }
-      }
-    }
-
-    const nextTask = { ...task };
-    handleUpdateTask(nextTask);
-    setTime("");
-    setTaskList(newTaskList);
-    document.getElementById("editTaskModal").style.display = "none";
-  };
-
-  function deleteTask(id) {
-    const newTaskList = taskList.filter((TASK, i) => TASK.id !== id);
-    setTaskList(newTaskList);
-    axios.post("/api/todo/task/delete", { id }).then((response) => {});
-  }
-
-  const handleShareTodo = (e) => {
-    e.preventDefault();
-    const formData = new FormData();
-    formData.append("todoId", String(currentList.id));
-    // eslint-disable-next-line no-restricted-syntax, guard-for-in
-    for (const key in share) {
-      formData.append(key, share[key]);
-    }
+    const nextTask = { ...task, todoId: todoList[selTodoIdx].id };
     axios
-      .post("/api/todo/share", formData)
-      .then((res) => {
-        // eslint-disable-next-line no-alert
-        alert("공유가 완료되었습니다.");
-      })
-      .catch((err) => {
-        // eslint-disable-next-line no-alert
-        alert("공유에 실패했습니다.");
+      .post("/api/todo/task/update", nextTask)
+      .then((response) => {
+        const nextTaskList = taskList.map((taskItem) => {
+          const nextTaskItem = { ...taskItem };
+          if (taskItem.id === task.id) {
+            nextTaskItem.content = task.content;
+            if (task.time) {
+              nextTaskItem.datetime = task.datetime;
+            }
+          }
+          return nextTaskItem;
+        });
+        setTaskList(nextTaskList);
       })
       .finally(() => {
-        document.getElementById("shareTodoModal").style.display = "none";
+        document.getElementById("editTaskModal").style.display = "none";
       });
+  };
+
+  const handleToggleTaskDone = (e, nextTask) => {
+    e.preventDefault();
+    axios.post("/api/todo/task/update", nextTask).then((response) => {
+      const nextTaskList = taskList.map((taskItem) => {
+        if (taskItem.id === nextTask.id) {
+          return nextTask;
+        }
+        return taskItem;
+      });
+      setTaskList(nextTaskList);
+    });
+  };
+
+  const handleDeleteTask = (e, id) => {
+    e.preventDefault();
+    axios.post("/api/todo/task/delete", { id }).then((response) => {
+      const nextTaskList = taskList.filter((taskItem) => taskItem.id !== id);
+      setTaskList(nextTaskList);
+      alert("삭제되었습니다.");
+    });
   };
 
   return (
@@ -266,23 +247,26 @@ function LandingPage(props) {
           </h1>
           <img src={user.image} alt="profile" />
           <div className="grow flex flex-col justify-center w-full">
-            {todoLists.map((option) => (
+            {todoList.map((todoItem, idx) => (
               <button
                 className={`flex flex-row items-center justify-center w-full mt-3 py-2 ${
-                  option.id === currentList.id
+                  todoList[selTodoIdx] !== undefined &&
+                  todoItem.id === todoList[selTodoIdx].id
                     ? "border-b-2 bg-primary text-white"
                     : ""
                 }`}
-                key={option.id}
+                key={todoItem.id}
                 type="button"
-                id={option.id}
-                onClick={() => setCurrentList(option)}
+                id={todoItem.id}
+                onClick={() => {
+                  setSelTodoIdx(idx);
+                }}
               >
                 <label
                   className="xl:text-2xl md:text-xl text-base font-StrongAF focus:border-slate-500 hover:border-b-2 hover:border-slate-800 cursor-pointer"
-                  htmlFor={option.id}
+                  htmlFor={todoItem.id}
                 >
-                  {option.goal}
+                  {todoItem.goal}
                 </label>
               </button>
             ))}
@@ -366,44 +350,48 @@ function LandingPage(props) {
           <div className="relative taskList bg-white w-5/12 ml-14 rounded-2xl flex flex-col mt-8 mb-8 content-between">
             <nav className="bg-primary h-[3rem] rounded-t-2xl flex items-center justify-center">
               <h1 className="xl:text-xl md:text-lg text-base text-white font-StrongAFBold">
-                {dayjs(date).format("MM월 DD일")}
+                {dayjs(selDate).format("MM월 DD일")}
               </h1>
             </nav>
             <div
               id="tasklist"
               className="flex flex-col justify-center shrink-0 overflow-y-auto grow-0"
             >
-              {taskList.map((option) => (
-                <div key={option.id} className="form-check hover:bg-slate-200">
+              {taskList.map((taskItem) => (
+                <div
+                  key={taskItem.id}
+                  className="form-check hover:bg-slate-200"
+                >
                   <input
                     className="form-check-input peer ml-3 h-6 w-6 border border-gray-300 rounded-sm focus:outline-none transition duration-200 mt-1 align-top bg-no-repeat bg-center bg-contain float-left mr-2 cursor-pointer"
                     type="checkbox"
                     value=""
-                    defaultChecked={option.isDone}
-                    id={`task${option.id}`}
-                    onClick={(e) => {
-                      // eslint-disable-next-line no-param-reassign
-                      option.isDone = !option.isDone;
-                      handleUpdateTask(option);
+                    checked={taskItem.isDone}
+                    id={`task${taskItem.id}`}
+                    onChange={(e) => {
+                      handleToggleTaskDone(e, {
+                        ...taskItem,
+                        isDone: !taskItem.isDone,
+                      });
                     }}
                   />
                   <label
                     className="form-check-label inline-block text-gray-800 xl:text-2xl text-xl font-StrongAF peer-checked:line-through peer-checked:text-gray-400"
-                    htmlFor={`task${option.id}`}
+                    htmlFor={`task${taskItem.id}`}
                   >
-                    {option.content}
+                    {taskItem.content}
                   </label>
                   <div className="ml-3 peer-checked:text-gray-400">
                     <label
                       className="font-StrongAF"
-                      htmlFor={`task${option.id}`}
+                      htmlFor={`task${taskItem.id}`}
                     >
-                      {dayjs(option.datetime).format("YYYY-MM-DD HH:mm")}
+                      {dayjs(taskItem.datetime).format("YYYY-MM-DD HH:mm")}
                     </label>
                     <button
                       type="button"
                       className="float-right mr-3"
-                      onClick={() => deleteTask(option.id)}
+                      onClick={(e) => handleDeleteTask(e, taskItem.id)}
                     >
                       <img
                         src={TrashBtnImg}
@@ -419,15 +407,14 @@ function LandingPage(props) {
                           "block";
                         setTask({
                           ...task,
-                          id: option.id,
-                          content: option.content,
-                          datetime: option.datetime,
+                          id: taskItem.id,
+                          content: taskItem.content,
+                          datetime: taskItem.datetime,
                         });
-                        setEditTask(option.content);
                         document.getElementById("input_task_edit").value =
-                          option.content;
+                          taskItem.content;
                         document.getElementById("edit_time").value = dayjs(
-                          option.datetime
+                          taskItem.datetime
                         ).format("HH:mm");
                       }}
                     >
@@ -492,7 +479,7 @@ function LandingPage(props) {
               title="TODOLIST 삭제"
               message="정말로 TODOLIST를 삭제하시겠습니까?"
               btnId="delTodoBtn"
-              btnClick={() => handleDelTodo(currentList.id)}
+              btnClick={(e) => handleDelTodo(e, todoList[selTodoIdx].id)}
               btnImg={ModalAddBtnImg}
             />
 
@@ -509,18 +496,14 @@ function LandingPage(props) {
                 id="input_title"
                 placeholder="제목을 적어주세요"
                 onChange={(e) => {
-                  const nextShare = { ...share };
-                  nextShare.title = e.target.value;
-                  setShare(nextShare);
+                  setShareTodo({ ...shareTodo, title: e.target.value });
                 }}
               />
               <TextInput
                 id="input_desc"
                 placeholder="설명을 적어주세요"
                 onChange={(e) => {
-                  const nextShare = { ...share };
-                  nextShare.desc = e.target.value;
-                  setShare(nextShare);
+                  setShareTodo({ ...shareTodo, desc: e.target.value });
                 }}
               />
               <FileInput
@@ -528,25 +511,21 @@ function LandingPage(props) {
                 name="profile-image"
                 placeholder="대표사진을 올려주세요"
                 onChange={(e) => {
-                  const nextShare = { ...share };
-                  [nextShare.shareImage] = e.target.files;
-                  setShare(nextShare);
+                  setShareTodo({ ...shareTodo, shareImage: e.target.files[0] });
                 }}
-                file={share.shareImage}
+                file={shareTodo.shareImage}
                 fileType="image/*"
               />
               <TextInput
                 id="input_hashtag"
                 placeholder="태그를 적어주세요"
                 onChange={(e) => {
-                  const nextShare = { ...share };
-                  nextShare.hashtag = e.target.value;
-                  setShare(nextShare);
+                  setShareTodo({ ...shareTodo, hashtag: e.target.value });
                 }}
               />
             </Modal>
 
-            {/* Task 작성 모달창 */}
+            {/* Task 추가 모달창 */}
             <Modal
               modalId="inputTaskModal"
               title="Task 추가"
@@ -559,14 +538,19 @@ function LandingPage(props) {
                 id="input_task"
                 placeholder="ex) 운동하기"
                 onChange={(e) => {
-                  setInputTask(e.target.value);
+                  setTask({ ...task, content: e.target.value });
                 }}
               />
               <TimeInput
                 id="input_time"
                 placeholder="시간을 정해주세요"
                 onChange={(e) => {
-                  setTime(e.target.value);
+                  setTask({
+                    ...task,
+                    datetime: `${dayjs(selDate).format(
+                      "YYYY-MM-DD"
+                    )}T${e.target.value.replace("-", ":")}:00.000Z`,
+                  });
                 }}
               />
             </Modal>
@@ -584,14 +568,19 @@ function LandingPage(props) {
                 id="input_task_edit"
                 placeholder="ex) 운동하기"
                 onChange={(e) => {
-                  setEditTask(e.target.value);
+                  setTask({ ...task, content: e.target.value });
                 }}
               />
               <TimeInput
                 id="edit_time"
                 placeholder="시간을 정해주세요!"
                 onChange={(e) => {
-                  setTime(e.target.value);
+                  setTask({
+                    ...task,
+                    datetime: `${dayjs(selDate).format(
+                      "YYYY-MM-DD"
+                    )}T${e.target.value.replace("-", ":")}:00.000Z`,
+                  });
                 }}
               />
             </Modal>
@@ -603,10 +592,12 @@ function LandingPage(props) {
           >
             <Calendar
               className="border-0"
-              onChange={(Date) => setDate(Date)}
-              value={date}
-              formatDay={(locale, Date) => Date.getDate()} // remove '일' from day
-              formatMonth={(locale, Date) => Date.getMonth() + 1} // remove '월' from month
+              onChange={(date) => {
+                setSelDate(date);
+              }}
+              value={selDate}
+              formatDay={(locale, date) => date.getDate()} // remove '일' from day
+              formatMonth={(locale, date) => date.getMonth() + 1} // remove '월' from month
             />
           </div>
         </div>
@@ -626,7 +617,6 @@ LandingPage.propTypes = {
     discharge: PropTypes.string.isRequired,
     image: PropTypes.string.isRequired,
   }).isRequired,
-  setUser: PropTypes.func.isRequired,
   Logout: PropTypes.func.isRequired,
 };
 
